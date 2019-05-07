@@ -26,7 +26,7 @@ module CommandHelper
       " %s %s %s" % ['*'.blue, command, desc.to_s.light_black]
     end
 
-    puts  a.map {|x| format_command.call(x) }.join("\n")
+    puts a.map {|x| format_command.call(x) }.join("\n")
     
   end
 
@@ -42,6 +42,7 @@ class EasyImgUtils
   include Magick
 
 @commands = "
+* add_svg # adds an SVG transparency overlay. usage: add_svg('/tmp/image1.svg')
 * add_text # e.g. add_text('some text')
 * blur # e.g. blur(x: 231, y: 123, w: 85, h: 85)
 * crop # e.g. crop(x: 231, y: 123, w: 85, h: 85)
@@ -72,6 +73,20 @@ class EasyImgUtils
     end
     
     write img, quality
+    
+  end
+  
+  def add_svg(svg_file)
+
+    img = Magick::ImageList.new
+    img.read(@file_in)
+    
+    img.read(svg_file) do
+        self.format = 'SVG'
+        self.background_color = 'transparent'
+    end
+    
+    img.flatten_images.write @file_out
     
   end
   
@@ -138,7 +153,7 @@ class EasyImgUtils
     Magick::Image.from_blob(data).first
   end
 
-  def run(command, show: false)
+  def run(command, show=false)
 
     if show then 
       command
