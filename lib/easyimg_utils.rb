@@ -5,6 +5,7 @@
 require 'c32'
 require 'rxfhelper'
 require 'rmagick'
+require 'webp_ffi'
 
 # requirements:
 #
@@ -13,6 +14,10 @@ require 'rmagick'
 # 
 # viewer:
 # apt-get install feh
+#
+# webp-ffi dependencies
+# apt-get install libjpeg-dev libpng-dev libtiff-dev libwebp-dev
+#
 
 
 
@@ -46,15 +51,21 @@ class EasyImgUtils
 * add_svg # adds an SVG transparency overlay. usage: add_svg('/tmp/image1.svg')
 * add_text # e.g. add_text('some text')
 * blur # e.g. blur(x: 231, y: 123, w: 85, h: 85)
+* capture_screen # takes a screenshot of the desktop
 * center_crop # crops from the centre of an image. Usage center_crop(width, height)
 * composite # overlay a smaller image on top of an image
 * contrast # changes the intensity between lighter and darker elements
+* convert # convert from 1 img format to another
 * crop # e.g. crop(x: 231, y: 123, w: 85, h: 85)
 * fax_effect # Produces a high-contrast, two colour image
 * greyscale # Reduces the image to 256 shades of grey
 * info # returns the dimension of the image in a Hash object
 * make_thumbnail # similar to resize but faster for sizes less than 10% of original image 
 * resize # set the maximum geomertry of the image for resizing e.g. resize('320x240')
+* rotate
+* rotate_180
+* rotate_left
+* rotate_right
 * sketch # renders an artistic sketch, ideal with simplistic photos
 * view # view the output
 * vignette # Feathers the edge of an image in a circular path
@@ -62,9 +73,10 @@ class EasyImgUtils
 
 
   def initialize(img_in=nil, img_out=nil, out: img_out, 
-                 working_dir: '/tmp')
+                 working_dir: '/tmp', debug: false)
 
     @file_in, @file_out, @working_dir = img_in, out, working_dir    
+    @debug = debug
 
   end
   
@@ -126,6 +138,24 @@ class EasyImgUtils
     write img, quality
     
   end
+  
+  def brightness(quality: nil)
+    img = read()
+    img2 = imglevel(-Magick::QuantumRange * 0.25, Magick::QuantumRange * 1.25, 1.0)
+    write img2, quality
+  end
+  
+  def capture_screen(quality: nil)
+    
+    # defaults (silent=false, frame=false, descend=false, 
+    #           screen=false, borders=false)
+    
+    img = Magick::Image.capture(true, false, false, true, true) {
+      self.filename = "root"
+    }
+    write img, quality
+    
+  end
 
   def center_crop(w=0, h=0, width: w, height: h, quality: nil)
     
@@ -156,6 +186,9 @@ class EasyImgUtils
     
   end
   
+  alias overlay composite
+  alias add_img composite
+  
   # contrast level 
   # 1 low -> 10 high
   #
@@ -174,6 +207,33 @@ class EasyImgUtils
     write img, quality
     
   end
+  
+  def convert(quality: nil)
+    
+    if File.extname(@file_in) == '.webp' then      
+      
+      # output_format options: pam, ppm, pgm, bmp, tiff or yuv
+      ext = File.extname(@file_out)[1..-1].to_sym
+      puts 'ext: ' + ext.inspect if @debug
+      
+      if ext == :jpg then
+        
+        file_out = @file_out.sub(/\.jpg$/,'.png')
+        WebP.decode(@file_in, file_out, output_format: :png)
+        img = read(file_out)
+        write img, quality
+        
+      else
+      
+        WebP.decode(@file_in, @file_out, output_format: ext)
+      end
+      
+    else
+      img = read()
+      write img, quality
+    end
+    
+  end     
   
   def crop(x: 0, y: 0, w: nil, h: nil, quality: nil)
     
@@ -225,6 +285,8 @@ class EasyImgUtils
     write img2, quality    
     
   end
+  
+  alias thumbnail make_thumbnail
 
   # defines the maximum size of an image while maintaining aspect ratio
   #
@@ -239,6 +301,39 @@ class EasyImgUtils
     write preview, quality
     
   end
+  
+  def rotate(degrees)
+    
+    img = read()
+    img2 = img.rotate(degrees.to_i)
+    write img2, quality    
+    
+  end
+
+  def rotate_180()
+    
+    img = read()
+    img2 = img.rotate(180)
+    write img2, quality    
+    
+  end    
+  
+  def rotate_left()
+    
+    img = read()
+    img2 = img.rotate(-45)
+    write img2, quality    
+    
+  end    
+  
+  def rotate_right()
+    
+    img = read()
+    img2 = img.rotate(45)
+    write img2, quality    
+    
+  end  
+    
   
   def sketch(quality: nil)
     
@@ -256,6 +351,8 @@ class EasyImgUtils
     write img, quality
     
   end
+  
+  alias drawing sketch
 
   def view(show: true)
     
@@ -273,11 +370,13 @@ class EasyImgUtils
     write img2, quality
     
   end
+  
+  alias feathered_around vignette
 
   private
   
-  def read()
-    data, type = RXFHelper.read(@file_in)
+  def read(file=@file_in)
+    data, type = RXFHelper.read(file)
     Magick::Image.from_blob(data).first
   end
 
