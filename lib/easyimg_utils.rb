@@ -396,11 +396,23 @@ class EasyImgUtils
     
     return img.to_blob unless @file_out
     
-    #img.write @file_out do
-    #  self.quality = quality if quality
-    #end
-    img.quality = quality if quality
-    FileX.write @file_out, img.to_blob
+    if @file_out =~ /^dfs:/ then
+      
+      outfile = File.join(@working_dir, File.basename(@file_out))
+      
+      img.write outfile do 
+        self.quality = quality.to_i if quality
+      end
+
+      FileX.cp outfile, @file_out
+      
+    else
+      
+      img.write @file_out do 
+        self.quality = quality.to_i if quality
+      end
+      
+    end
   end
 
 end
