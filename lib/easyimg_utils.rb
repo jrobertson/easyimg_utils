@@ -45,6 +45,7 @@ end
 class EasyImgUtils
   extend CommandHelper
   include Magick
+  include RXFHelperModule
 
 @commands = "
 * add rectangle # usage: add_rectangle(color: 'green', x1: 12, y1: 12, x2: 24, y2: 24)
@@ -395,9 +396,11 @@ class EasyImgUtils
     
     return img.to_blob unless @file_out
     
-    img.write @file_out do
-      self.quality = quality if quality
-    end    
+    #img.write @file_out do
+    #  self.quality = quality if quality
+    #end
+    img.quality = quality if quality
+    FileX.write @file_out, img.to_blob
   end
 
 end
