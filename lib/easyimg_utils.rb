@@ -51,6 +51,7 @@ class EasyImgUtils
 * add rectangle # usage: add_rectangle(color: 'green', x1: 12, y1: 12, x2: 24, y2: 24)
 * add_svg # adds an SVG transparency overlay. usage: add_svg('/tmp/image1.svg')
 * add_text # e.g. add_text('some text')
+* animate Creates an animated gif e.g. animate('/tmp/a%d.png', '/tmp/b.gif')
 * blur # e.g. blur(x: 231, y: 123, w: 85, h: 85)
 * capture_screen # takes a screenshot of the desktop
 * center_crop # crops from the centre of an image. Usage center_crop(width, height)
@@ -86,14 +87,15 @@ class EasyImgUtils
                     x1: 0, y1: 0, x2: 0, y2: 0)
     
     x1, y1, x2, y2 = *a if a
-    img = read()
-    gc = Magick::Draw.new
-    gc.stroke('green')
-    gc.stroke_width(5)
-    gc.fill('transparent')
-    gc.rectangle(x1, y1, x2, y2)
-    gc.draw(img)
-    write img, quality
+    read() do |img|
+      gc = Magick::Draw.new
+      gc.stroke('green')
+      gc.stroke_width(5)
+      gc.fill('transparent')
+      gc.rectangle(x1, y1, x2, y2)
+      gc.draw(img)
+      write img, quality
+    end
     
   end
     
@@ -113,38 +115,56 @@ class EasyImgUtils
 
   def add_text(s='your text goes here', quality: nil)
     
-    img = read()
+    read() do |img|
 
-    d = Draw.new
-    img.annotate(d, 0,0,0,0, s) do
-      d.gravity = Magick::SouthGravity
-      d.pointsize = 26
-      d.stroke = '#000000'
-      d.fill = '#ffffff'
-      d.font_weight = Magick::BoldWeight
+      d = Draw.new
+      img.annotate(d, 0,0,0,0, s) do
+        d.gravity = Magick::SouthGravity
+        d.pointsize = 26
+        d.stroke = '#000000'
+        d.fill = '#ffffff'
+        d.font_weight = Magick::BoldWeight
+      end
+      
+      write img, quality
+      
     end
-    
-    write img, quality
     
   end
   
+  def animate()
+
+    anim = Magick::ImageList.new
+    
+    read() {|img| anim << img }    
+    anim.ticks_per_second = 100
+    anim.delay = 20
+    
+    @file_out ? anim.write(@file_out) : anim.animate
+    
+  end    
   
   def blur(x: 0, y: 0, w: 80, h: 80, strength: 8, quality: nil)
     
     width, height = w, h
-    img = read()
-    region = img.dispatch(x, y, width, height, 'RGB')
-    face_img = Magick::Image.constitute(width, height, "RGB", region)
-    img.composite!(face_img.gaussian_blur(0, strength), x, y, 
-                   Magick::OverCompositeOp)
-    write img, quality
+    
+    read() do |img|
+      
+      region = img.dispatch(x, y, width, height, 'RGB')
+      face_img = Magick::Image.constitute(width, height, "RGB", region)
+      img.composite!(face_img.gaussian_blur(0, strength), x, y, 
+                    Magick::OverCompositeOp)
+      write img, quality
+      
+    end
     
   end
   
   def brightness(quality: nil)
-    img = read()
-    img2 = imglevel(-Magick::QuantumRange * 0.25, Magick::QuantumRange * 1.25, 1.0)
-    write img2, quality
+    read() do |img|
+      img2 = imglevel(-Magick::QuantumRange * 0.25, Magick::QuantumRange * 1.25, 1.0)
+      write img2, quality
+    end
   end
   
   def capture_screen(quality: nil)
@@ -163,9 +183,10 @@ class EasyImgUtils
     
     return unless w
     
-    img = read()
-    img.crop!(CenterGravity, width, height)
-    write img, quality    
+    read() do |img|
+      img.crop!(CenterGravity, width, height)
+      write img, quality
+    end
     
   end
   
@@ -173,18 +194,19 @@ class EasyImgUtils
     
     return unless filex
     
-    img = read()
+    read() do |img|
         
-    imgx = Magick::ImageList.new(filex)
+      imgx = Magick::ImageList.new(filex)
 
-    # Change the white pixels in the sign to transparent.
-    imgx = imgx.matte_replace(0,0)
+      # Change the white pixels in the sign to transparent.
+      imgx = imgx.matte_replace(0,0)
 
-    img2 = Magick::Draw.new
-    img2.composite(x, y, 0, 0, imgx)
-    img2.draw(img)    
-    
-    write img, quality        
+      img2 = Magick::Draw.new
+      img2.composite(x, y, 0, 0, imgx)
+      img2.draw(img)    
+      
+      write img, quality
+    end
     
   end
   
@@ -200,13 +222,14 @@ class EasyImgUtils
     
     return if level == neutral
         
-    img ||= read()
+    read() do |img|
             
-    n = neutral - level
-    sharpen  = n > 0 
-    n.abs.times { img = img.contrast(sharpen) }
-    
-    write img, quality
+      n = neutral - level
+      sharpen  = n > 0 
+      n.abs.times { img = img.contrast(sharpen) }
+      
+      write img, quality
+    end
     
   end
   
@@ -241,28 +264,31 @@ class EasyImgUtils
     
     return unless w
     
-    img = read()
-    img.crop!(x,y, width=w, height=h)
-    write img, quality
+    read() do |img|
+      img.crop!(x,y, width=w, height=h)
+      write img, quality
+    end
     
   end
   
   def fax_effect(threshold: 0.55, quality: nil)
 
-    img = read()
+    read() do |img|
     
-    # Use a threshold of 55% of MaxRGB.
-    img = img.threshold(Magick::MaxRGB*threshold)
-    
-    write img, quality
+      # Use a threshold of 55% of MaxRGB.
+      img = img.threshold(Magick::MaxRGB*threshold)      
+      write img, quality
+      
+    end
     
   end
   
   def greyscale(quality: nil)
     
-    img = read()
-    img2 = img.quantize(256, GRAYColorspace)
-    write img2, quality
+    read() do |img|
+      img2 = img.quantize(256, GRAYColorspace)
+      write img2, quality
+    end
     
   end
   
@@ -282,9 +308,10 @@ class EasyImgUtils
   
   def make_thumbnail(width=125, height=125)
     
-    img = read()
-    img2 = img.thumbnail(width, height)
-    write img2, quality    
+    read() do |img|
+      img2 = img.thumbnail(width, height)
+      write img2, quality
+    end
     
   end
   
@@ -294,45 +321,50 @@ class EasyImgUtils
   #
   def resize(geometry='320x240', quality: nil)
     
-    preview = read()
+    read() do |preview|
     
-    preview.change_geometry!(geometry) do |cols, rows, img|
-      img.resize!(cols, rows)
+      preview.change_geometry!(geometry) do |cols, rows, img|
+        img.resize!(cols, rows)
+      end
+      
+      write preview, quality
     end
-    
-    write preview, quality
     
   end
   
   def rotate(degrees)
     
-    img = read()
-    img2 = img.rotate(degrees.to_i)
-    write img2, quality    
+    read() do |img|
+      img2 = img.rotate(degrees.to_i)
+      write img2, quality
+    end
     
   end
 
   def rotate_180()
     
-    img = read()
-    img2 = img.rotate(180)
-    write img2, quality    
+    read() do |img|
+      img2 = img.rotate(180)
+      write img2, quality
+    end
     
   end    
   
   def rotate_left()
     
-    img = read()
-    img2 = img.rotate(-45)
-    write img2, quality    
+    read() do |img|
+      img2 = img.rotate(-45)
+      write img2, quality
+    end
     
   end    
   
   def rotate_right()
     
-    img = read()
-    img2 = img.rotate(45)
-    write img2, quality    
+    read() do |img|
+      img2 = img.rotate(45)
+      write img2, quality    
+    end
     
   end  
   
@@ -340,11 +372,12 @@ class EasyImgUtils
   #
   def scale(factor=0.75, quality: nil)
     
-    img = read()
+    read() do |img|
     
-    img2 = img.scale(factor)
-    
-    write img2, quality
+      img2 = img.scale(factor)      
+      write img2, quality
+      
+    end
     
   end
     
@@ -352,18 +385,20 @@ class EasyImgUtils
   
   def sketch(quality: nil)
     
-    img = read()
+    read() do |img|
 
-    # Convert to grayscale
-    sketch = img.quantize(256, Magick::GRAYColorspace)
+      # Convert to grayscale
+      sketch = img.quantize(256, Magick::GRAYColorspace)
 
-    # Apply histogram equalization
-    sketch = sketch.equalize
+      # Apply histogram equalization
+      sketch = sketch.equalize
 
-    sketch = sketch.sketch(0, 10, 135)
-    img = img.dissolve(sketch, 0.75, 0.25)
+      sketch = sketch.sketch(0, 10, 135)
+      img = img.dissolve(sketch, 0.75, 0.25)
 
-    write img, quality
+      write img, quality
+      
+    end
     
   end
   
@@ -379,10 +414,12 @@ class EasyImgUtils
   
   def vignette(quality: nil)
     
-    img = read()
-    img2 = img.vignette
-
-    write img2, quality
+    read() do |img|
+      
+      img2 = img.vignette
+      write img2, quality
+      
+    end
     
   end
   
@@ -391,8 +428,28 @@ class EasyImgUtils
   private
   
   def read(file=@file_in)
-    data, type = RXFHelper.read(file)
-    Magick::Image.from_blob(data).first
+    
+    files = if file =~ /%d/ then
+
+      regfilepath = file.sub('%d','(\d+)')
+      globfilepath = file.sub('%d','*')
+      
+      a = Dir[globfilepath]
+
+      a.sort_by {|x| Regexp.new(regfilepath).match(x).captures[0].to_i }      
+
+    else
+      [file]
+    end     
+    
+    files.each do |filex|
+      
+      @filex_in = filex
+      data, type = RXFHelper.read(filex)
+      yield(Magick::Image.from_blob(data).first)      
+      
+    end    
+
   end
 
   def run(command, show=false)
@@ -410,19 +467,27 @@ class EasyImgUtils
     
     return img.to_blob unless @file_out
     
-    if @file_out =~ /^dfs:/ then
+    file_out = if @file_out =~ /%d/ then
+      regpath = @file_in.sub('%d','(\d+)')
+      n = @filex_in[/#{regpath}/,1]
+      @file_out.sub('%d',n)
+    else
+      @file_out
+    end
+    
+    if file_out =~ /^dfs:/ then
       
-      outfile = File.join(@working_dir, File.basename(@file_out))
+      outfile = File.join(@working_dir, File.basename(file_out))
       
       img.write outfile do 
         self.quality = quality.to_i if quality
       end
 
-      FileX.cp outfile, @file_out
+      FileX.cp outfile, file_out
       
     else
       
-      img.write @file_out do 
+      img.write file_out do 
         self.quality = quality.to_i if quality
       end
       
