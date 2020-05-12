@@ -62,11 +62,12 @@ class EasyImgUtils
 * greyscale # Reduces the image to 256 shades of grey
 * info # returns the dimension of the image in a Hash object
 * make_thumbnail # similar to resize but faster for sizes less than 10% of original image 
-* resize # set the maximum geomertry of the image for resizing e.g. resize('320x240')
+* resize # set the maximum geomertry of the image for resizing e.g. resize('320x240') see also scale
 * rotate
 * rotate_180
 * rotate_left
 * rotate_right
+* scale # Scales an image by the given factor e.g. 0.75 is 75%. see also resize
 * sketch # renders an artistic sketch, ideal with simplistic photos
 * view # view the output
 * vignette # Feathers the edge of an image in a circular path
@@ -334,6 +335,19 @@ class EasyImgUtils
     write img2, quality    
     
   end  
+  
+  # Scales an image by the given factor e.g. 0.75 is 75%
+  #
+  def scale(factor=0.75, quality: nil)
+    
+    img = read()
+    
+    img2 = img.scale(factor)
+    
+    write img2, quality
+    
+  end
+    
     
   
   def sketch(quality: nil)
