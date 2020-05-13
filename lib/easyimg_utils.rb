@@ -383,20 +383,22 @@ class EasyImgUtils
     
   end
 
-  # Currently the screencast has no options. It will capture the screen 
-  # every second for a duration of 6 seconds.
+  # Takes a screenshot every second to create an animated gif
   #
-  def screencast()
+  def screencast(duration: 6, scale: 1, window: true)
     
     fileout = @file_out.sub(/\.\w+$/,'%d.png')
     
     puts 'fileout: ' + fileout if @debug
     
     x4ss = X4ss.new fileout, mouse: true, window: true
-    sleep 2; x4ss.record # then go to the target window, wait 2 seconds and go
+    mode = window ? :window : :screen
+    sleep 2; x4ss.record duration: duration, mode: mode
     x4ss.save
     
-    EasyImgUtils.new(fileout, @file_out).animate
+    fileout2 = fileout.sub(/(?=%)/,'b')
+    EasyImgUtils.new(fileout, fileout2).scale(scale) unless scale == 1
+    EasyImgUtils.new(fileout2, @file_out).animate
     
   end
   
