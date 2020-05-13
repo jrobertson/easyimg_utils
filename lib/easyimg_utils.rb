@@ -3,9 +3,10 @@
 # file: easyimg_utils.rb
 
 require 'c32'
-require 'rxfhelper'
+require 'x4ss'
 require 'rmagick'
 require 'webp_ffi'
+require 'rxfhelper'
 
 # requirements:
 #
@@ -69,6 +70,7 @@ class EasyImgUtils
 * rotate_left
 * rotate_right
 * scale # Scales an image by the given factor e.g. 0.75 is 75%. see also resize
+* screencast # records a screencast and saves it as animated gif. e.g. (out: '/tmp/fun.gif').screencast
 * sketch # renders an artistic sketch, ideal with simplistic photos
 * view # view the output
 * vignette # Feathers the edge of an image in a circular path
@@ -380,8 +382,23 @@ class EasyImgUtils
     end
     
   end
+
+  # Currently the screencast has no options. It will capture the screen 
+  # every second for a duration of 6 seconds.
+  #
+  def screencast()
     
+    fileout = @file_out.sub(/\.\w+$/,'%d.png')
     
+    puts 'fileout: ' + fileout if @debug
+    
+    x4ss = X4ss.new fileout, mouse: true, window: true
+    sleep 2; x4ss.record # then go to the target window, wait 2 seconds and go
+    x4ss.save
+    
+    EasyImgUtils.new(fileout, @file_out).animate
+    
+  end
   
   def sketch(quality: nil)
     
@@ -435,7 +452,7 @@ class EasyImgUtils
       globfilepath = file.sub('%d','*')
       
       a = Dir[globfilepath]
-
+      puts 'a: '  + a.inspect if @debug
       a.sort_by {|x| Regexp.new(regfilepath).match(x).captures[0].to_i }      
 
     else
