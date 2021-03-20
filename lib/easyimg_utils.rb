@@ -56,7 +56,7 @@ class EasyImgUtils
 * animate Creates an animated gif e.g. animate('/tmp/a%d.png', '/tmp/b.gif')
 * blur # e.g. blur(x: 231, y: 123, w: 85, h: 85)
 * capture_screen # takes a screenshot of the desktop
-* calc_resize # e.g. EasyImgUtils.calc_resize '1449x1932', '640x480' #=> 480x640
+* calc_resize # e.g. calc_resize '640x480' #=> 640x491
 * center_crop # crops from the centre of an image. Usage center_crop(width, height)
 * composite # overlay a smaller image on top of an image
 * contrast # changes the intensity between lighter and darker elements
@@ -91,12 +91,13 @@ class EasyImgUtils
   #
   def self.calc_resize(s, s2)
     
-    a = s.split('x',2).map(&:to_i).sort
-    a2 = s2.split('x',2).map(&:to_i).sort
-    
-    factor = a2.last / a.last.to_f
-    
-    a.map {|x| (x * factor).to_i}.join('x')    
+    a = s.split('x',2).map(&:to_i)
+    a2 = s2.split('x',2).map(&:to_i)
+    i = a.index a.max
+
+    factor = a2[i] / a[i].to_f
+
+    s3 = a.map {|x| (x * factor).round}.join('x')    
     
   end
   
@@ -182,6 +183,12 @@ class EasyImgUtils
       img2 = imglevel(-Magick::QuantumRange * 0.25, Magick::QuantumRange * 1.25, 1.0)
       write img2, quality
     end
+  end
+  
+  # calculates the new geometry after a resize
+  #
+  def calc_resize(geometry)    
+    EasyImgUtils.calc_resize(info()[:geometry], geometry)
   end
   
   def capture_screen(quality: nil)
