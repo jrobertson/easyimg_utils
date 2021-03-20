@@ -47,6 +47,7 @@ class EasyImgUtils
   extend CommandHelper
   include Magick
   include RXFHelperModule
+    
 
 @commands = "
 * add rectangle # usage: add_rectangle(color: 'green', x1: 12, y1: 12, x2: 24, y2: 24)
@@ -55,6 +56,7 @@ class EasyImgUtils
 * animate Creates an animated gif e.g. animate('/tmp/a%d.png', '/tmp/b.gif')
 * blur # e.g. blur(x: 231, y: 123, w: 85, h: 85)
 * capture_screen # takes a screenshot of the desktop
+* calc_resize # e.g. EasyImgUtils.calc_resize '1449x1932', '640x480' #=> 480x640
 * center_crop # crops from the centre of an image. Usage center_crop(width, height)
 * composite # overlay a smaller image on top of an image
 * contrast # changes the intensity between lighter and darker elements
@@ -83,6 +85,19 @@ class EasyImgUtils
     @file_in, @file_out, @working_dir = img_in, out, working_dir    
     @debug = debug
 
+  end
+  
+  # e.g. calc_resize '1449x1932', '640x480' #=> 480x640
+  #
+  def self.calc_resize(s, s2)
+    
+    a = s.split('x',2).map(&:to_i).sort
+    a2 = s2.split('x',2).map(&:to_i).sort
+    
+    factor = a2.last / a.last.to_f
+    
+    a.map {|x| (x * factor).to_i}.join('x')    
+    
   end
   
   def add_rectangle(a=[], quality: nil, color: 'green', stroke_width: 5, 
