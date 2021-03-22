@@ -352,8 +352,10 @@ class EasyImgUtils
 
   # defines the maximum size of an image while maintaining aspect ratio
   #
-  def resize(geometry='320x240', quality: nil)
+  def resize(raw_geometry='320x240', quality: nil)
     
+    geometry = calc_resize(raw_geometry
+                             )
     read() do |preview|
     
       preview.change_geometry!(geometry) do |cols, rows, img|

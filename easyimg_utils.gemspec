@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'easyimg_utils'
-  s.version = '0.6.5'
+  s.version = '0.6.6'
   s.summary = 'Makes manipulating images from 1 line of code easier.'
   s.authors = ['James Robertson']
   s.files = Dir['lib/easyimg_utils.rb']
