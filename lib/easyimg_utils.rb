@@ -7,6 +7,7 @@ require 'x4ss'
 require 'rmagick'
 require 'webp_ffi'
 require 'rxfhelper'
+require 'detectfaces'
 
 # requirements:
 #
@@ -19,6 +20,8 @@ require 'rxfhelper'
 # webp-ffi dependencies
 # apt-get install libjpeg-dev libpng-dev libtiff-dev libwebp-dev
 #
+# detectfaces dependencies
+# apt-get install libopencv-dev
 
 
 
@@ -63,6 +66,7 @@ class EasyImgUtils
 * convert # convert from 1 img format to another
 * crop # e.g. crop(x: 231, y: 123, w: 85, h: 85)
 * fax_effect # Produces a high-contrast, two colour image
+* faces # Returns an array of bounding boxes for detected faces
 * greyscale # Reduces the image to 256 shades of grey
 * info # returns the dimension of the image in a Hash object
 * make_thumbnail # similar to resize but faster for sizes less than 10% of original image 
@@ -302,6 +306,10 @@ class EasyImgUtils
       write img, quality
     end
     
+  end
+  
+  def faces()
+    DetectFaces.new(@file_in).faces
   end
   
   def fax_effect(threshold: 0.55, quality: nil)
