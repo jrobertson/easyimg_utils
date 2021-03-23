@@ -57,6 +57,7 @@ class EasyImgUtils
 * add_svg # adds an SVG transparency overlay. usage: add_svg('/tmp/image1.svg')
 * add_text # e.g. add_text('some text')
 * animate Creates an animated gif e.g. animate('/tmp/a%d.png', '/tmp/b.gif')
+* best_viewport # returns the best viewing region on the y-axis
 * blur # e.g. blur(x: 231, y: 123, w: 85, h: 85)
 * capture_screen # takes a screenshot of the desktop
 * calc_resize # e.g. calc_resize '640x480' #=> 640x491
@@ -174,6 +175,41 @@ class EasyImgUtils
     @file_out ? anim.write(@file_out) : anim.animate
     
   end    
+  
+  # Used where images are perhaps cropped using CSS to a letterbox size image.
+  # Works best with portrait mode photos of selfies or natural 
+  #   landscapes with a lot of sky
+  #
+  # Returns the starting y pos as a percentage of the image using face 
+  # detection and high contrast detection on the y-axis
+  #
+  def best_viewport()
+    
+    percentage = 0
+    
+    read() do |img|
+
+      found = faces()
+      
+      index = if found.any? then
+        
+        # find the top y
+        box = found.max_by {|x, y, width, height| y}
+        box[1]
+        
+      else
+        
+        y_maxcontrast(img)
+        
+      end
+            
+      percentage = (100 / (img.rows / index.to_f)).round
+      
+    end    
+    
+    return percentage
+    
+  end
   
   def blur(x: 0, y: 0, w: 80, h: 80, strength: 8, quality: nil)
     
@@ -483,7 +519,7 @@ class EasyImgUtils
     
   end
   
-  alias feathered_around vignette
+  alias feathered_around vignette 
 
   private
   
@@ -553,5 +589,31 @@ class EasyImgUtils
       
     end
   end
+  
+  # returns the y index of the pixel containing the most contrast using the 
+  # y-axis center of the image
+  #
+  def y_maxcontrast(img)
 
+    rows, cols = img.rows, img.columns
+    center = (cols / 2).round
+    pixels = img.get_pixels(center,0,1,rows)
+    
+    rgb = []
+    px = pixels[0]
+    rgb = [px.red, px.green, px.blue].map { |v| 255*(v/65535.0) }
+
+    a = pixels[1..-1].map do |pixel,i|
+
+      c = [pixel.red, pixel.green, pixel.blue].map { |v| 255*(v/65535.0) }
+      rgb[0] - c[0]
+      rgb.map.with_index {|x,i| (x - c[i]).abs.to_i}
+
+    end
+
+    a2 = a.map(&:sum)
+    a2.index(a2.max) + 1
+    
+  end  
+  
 end
