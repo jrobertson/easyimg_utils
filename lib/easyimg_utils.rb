@@ -195,7 +195,8 @@ class EasyImgUtils
         
         # find the top y
         box = found.max_by {|x, y, width, height| y}
-        box[1]
+        y, height = box.values_at 1, 3
+        y - (height / 2)
         
       else
         
@@ -612,7 +613,13 @@ class EasyImgUtils
     end
 
     a2 = a.map(&:sum)
-    a2.index(a2.max) + 1
+    puts 'a2: ' + a2.inspect if @debug
+    #a2.index(a2.max) + 1
+    # attempt to detect the 1st occurrence of contrast
+    r = a2.detect {|x| x > 600}
+    # otherwise select any occurrence of high contrast
+    r = a2.max unless r
+    a2.index(r) + 1
     
   end  
   
