@@ -94,20 +94,35 @@ class EasyImgUtils
   
   # e.g. calc_resize '1449x1932', '640x480' #=> 480x640
   # e.g. calc_resize '518x1024', '*518x500' #=> "518x1024" 
-  # the asterisk denotes a guaranteed the image will be resized using x or y
+  # the asterisk denotes a guarantee the image will be resized to a 
+  # minimum size on either dimension
   #
-  def self.calc_resize(geometry, new_geometry, force: false)
+  # e.g. calc_resize '1920x1088', '*518x*500' #=> "882x500" 
+  # 2 asterisks denotes a guaranteed minumum size on both dimensions
+  #
+  def self.calc_resize(geometry, new_geometry)
     
     xy = geometry.split('x',2)
     xy2 = new_geometry.split('x',2)
 
     # find any locked geometry which guarantees the resize on either x or y
-    lock = xy2.find {|x| x =~ /^\*/}
+    locks = xy2.select {|x| x =~ /^\*/}        
 
     a = xy.map {|x| x[/\d+/].to_i}
     a2 = xy2.map {|x| x[/\d+/].to_i}
+    
+    i = if locks.length > 1 then
 
-    i = lock ? a2.index(lock[1..-1].to_i) : a.index(a.max)
+      a.index(a.min)
+      
+    elsif locks.any? 
+      
+      lock = locks.first
+      a2.index(lock[1..-1].to_i)
+      
+    else      
+      a.index(a.max)
+    end
 
     factor = a2[i] / a[i].to_f
 
